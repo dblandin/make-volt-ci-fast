@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "build": "mdx-deck build --no-html sample.mdx",
+    "build": "mdx-deck build --no-html sample.mdx && cp -r images dist/",
     "start": "mdx-deck sample.mdx"
   },
   "devDependencies": {
