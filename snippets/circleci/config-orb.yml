@@ -1,0 +1,117 @@
+version: 2.1
+
+orbs:
+  yarn: artsy/yarn@0.2.0
+  hokusai: artsy/hokusai@0.6.0
+  slack: circleci/slack@3.3.0
+  node: artsy/node@0.1.0
+  artsy-remote-docker: artsy/remote-docker@0.1.0
+
+jobs:
+  test:
+    executor: hokusai/deploy
+    working_directory: ~/volt
+    parallelism: 6
+    steps:
+      - add_ssh_keys
+      - checkout
+      - setup_remote_docker
+      - run: hokusai registry pull --tag "$CIRCLE_SHA1"
+      - run: mkdir -p ~/volt/rspec ~/volt/capybara
+      - run:
+          name: Test
+          command: ./script/circle_test_task.sh
+          no_output_timeout: 30m
+      - run:
+          name: Copy rspec artifacts
+          command: docker cp hokusai_volt_1:/app/rspec ~/volt
+          when: always
+      - run:
+          name: Copy capybara artifacts
+          command: docker cp hokusai_volt_1:/app/tmp/capybara ~/volt
+          when: on_fail
+      - store_artifacts:
+          path: ~/volt/capybara
+      - store_artifacts:
+          path: ~/volt/rspec
+      - store_test_results:
+          path: ~/volt/rspec
+      - slack/status:
+          fail_only: true
+          only_for_branches: master
+          failure_message: Tests have failed for a Volt master build!
+
+  # Validate local MP schema against production MP schema
+  validate_production_schema:
+    executor: node/build
+    steps:
+      - yarn/setup
+      - run:
+          name: Validate Production Schema
+          command: node script/validate_schemas.js production
+      - slack/status:
+          fail_only: true
+          failure_message: "$PRODUCTION_SCHEMA_VALIDATION_FAILURE_MESSAGE"
+
+not_staging_or_release: &not_staging_or_release
+  filters:
+    branches:
+      ignore:
+        - staging
+        - release
+
+only_master: &only_master
+  context: hokusai
+  filters:
+    branches:
+      only: master
+
+only_release: &only_release
+  context: hokusai
+  filters:
+    branches:
+      only: release
+
+workflows:
+  default:
+    jobs:
+      - artsy-remote-docker/build:
+          <<: *not_staging_or_release
+          name: build
+          context: hokusai
+      - test:
+          <<: *not_staging_or_release
+          context: hokusai
+          requires:
+            - build
+
+      # Staging
+      - hokusai/deploy-staging:
+          <<: *only_master
+          project-name: volt
+          requires:
+            - test
+          post-steps:
+            - slack/status:
+                success_message: Volt staging has been deployed!
+                failure_message: Volt staging deploy has failed!
+      - validate_production_schema:
+          <<: *only_master
+          name: validate_production_schema_for_staging
+          context: volt-staging-deploy
+          requires:
+            - hokusai/deploy-staging
+
+      # Release
+      - validate_production_schema:
+          <<: *only_release
+          name: validate_production_schema_for_production
+          context: volt-production-deploy
+      - hokusai/deploy-production:
+          <<: *only_release
+          requires:
+            - validate_production_schema_for_production
+          post-steps:
+            - slack/status:
+                success_message: Volt production has been deployed!
+                failure_message: Volt production deploy has failed!

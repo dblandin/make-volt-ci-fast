@@ -1,0 +1,168 @@
+import { CodeSurfer } from "mdx-deck-code-surfer"
+import { dark } from "mdx-deck/themes"
+import nightOwl from "prism-react-renderer/themes/nightOwl"
+import { Image } from 'mdx-deck'
+
+export { components } from "mdx-deck-code-surfer"
+export const theme = {
+  ...dark,
+  codeSurfer: {
+    ...nightOwl,
+    showNumbers: true
+  }
+}
+
+# Hello 👋
+
+**Let's Make Volt CI Fast**
+
+---
+
+**Volt CI can be slow**
+
+---
+
+
+<Image src="images/circle-queue.png" size="70%" />
+
+---
+
+**We explored a few different approaches to speed things up**
+
+---
+
+1. Finish build early if wip/skip tag is used in commit/PR
+2. Update Docker image packaging
+3. Run docker build on an Artsy-managed Docker server to utilize cached layers
+
+---
+
+## 1. Finish build early if wip/skip tag is used in commit/PR
+
+---
+
+<CodeSurfer
+  title="Finish build early"
+  code={require("!raw-loader!./snippets/circleci/config-skip.yml")}
+  lang="yml"
+  steps={[
+    { notes: ".circle/config.yml" },
+    { range: [10, 19], notes: "Job: Check Skip CI" },
+    { range: [18, 19], notes: "Run script" },
+  ]}
+/>
+
+---
+
+<CodeSurfer
+  title="Finish build early"
+  code={require("!raw-loader!./snippets/circleci/config-skip.yml")}
+  lang="yml"
+  steps={[
+    { notes: ".circle/config.yml" },
+    { range: [10, 19], notes: "Job: Check Skip CI" },
+    { range: [18, 19], notes: "Run script" },
+  ]}
+/>
+
+---
+
+<CodeSurfer
+  title="Finish build early"
+  code={require("!raw-loader!./snippets/is_ci_skippable.sh")}
+  lang="bash"
+  steps={[
+    { notes: "script/is_ci_skippable.sh" },
+    { range: [23, 28], notes: "Required environment variables." },
+    { range: [48, 63], notes: "Where the magic happens." },
+    { range: [48, 63], notes: "Where the magic happens." },
+  ]}
+/>
+
+---
+
+<Image src="images/circle-skip.png" size="70%" />
+
+---
+
+## 2. Update Docker image packaging
+
+---
+
+<CodeSurfer
+  title="Update Docker packaging"
+  code={require("!raw-loader!./snippets/Dockerfile")}
+  lang="docker"
+  steps={[
+    { notes: "Dockerfile" },
+    { lines: [1], notes: "Alpine Linux base image" },
+    { range: [8, 18], notes: "Install system dependencies" },
+    { lines: [20], notes: "Configure chromedriver path" },
+    { range: [32, 33], notes: "Install ruby dependencies" },
+    { range: [35, 36], notes: "Install npm dependencies" },
+  ]}
+/>
+
+---
+
+## 3. Run docker build on an Artsy-managed Docker server to utilize cached layers
+
+---
+
+<CodeSurfer
+  title="Remote docker build"
+  code={require("!raw-loader!./snippets/circleci/config.yml")}
+  lang="yml"
+  steps={[
+    { notes: ".circle/config.yml" },
+    { range: [10, 77], notes: "Job: build" },
+    { range: [17, 39], notes: "Step: Setup remote Docker connection" },
+    { range: [23, 25], notes: "Copying the cert used to securely communicate." },
+    { range: [27, 28], notes: "Exporting connection details for the docker client." },
+    { lines: [29], notes: "Share exported environment variables with other steps." },
+    { range: [31, 38], notes: "Check that the Docker connection is good." },
+    { range: [35, 37], notes: "Remove the DOCKER_ env vars if unsuccessful, continue." },
+    { range: [40, 62], notes: "Step: Build and Push (remote)" },
+    { range: [44, 45], notes: "If we have connection details from previous step." },
+    { range: [47, 48], notes: "Build the docker image." },
+    { range: [50, 56], notes: "Push the built image to our registry." },
+    { lines: [59], notes: "Skip remaining steps in the job." },
+    { lines: [61], notes: "But, if we don't have those connection details, continue." },
+    { range: [63, 77], notes: "Fallback to Circle CI Docker infrastructure." },
+  ]}
+/>
+
+---
+
+<Image src="images/circle-workflow.png" size="70%" />
+
+---
+
+<Image src="images/circle-build-job.png" size="70%" />
+
+---
+
+<Image src="images/circle-docker-cache.png" size="70%" />
+
+---
+
+<Image src="images/circle-test-job.png" size="70%" />
+
+---
+
+<CodeSurfer
+  title="Remote docker build"
+  code={require("!raw-loader!./snippets/circleci/config-orb.yml")}
+  lang="yml"
+  steps={[
+    { notes: ".circle/config.yml" },
+    { range: [10, 11], notes: "Notice, no build step!" },
+    { lines: [8], notes: "artsy/remote-docker orb" },
+    { range: [75, 86], notes: "Our workflow" },
+    { range: [78, 81], notes: "Using the artsy/remote-docker build job" },
+  ]}
+/>
+
+---
+
+## Thanks!
