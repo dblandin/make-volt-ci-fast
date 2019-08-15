@@ -34,23 +34,11 @@ export const theme = {
 1. Finish build early if wip/skip tag is used in commit/PR
 2. Update Docker image packaging
 3. Run docker build on an Artsy-managed Docker server to utilize cached layers
+4. Use parallel_tests gem
 
 ---
 
 ## 1. Finish build early if wip/skip tag is used in commit/PR
-
----
-
-<CodeSurfer
-  title="Finish build early"
-  code={require("!raw-loader!./snippets/circleci/config-skip.yml")}
-  lang="yml"
-  steps={[
-    { notes: ".circle/config.yml" },
-    { range: [10, 19], notes: "Job: Check Skip CI" },
-    { range: [18, 19], notes: "Run script" },
-  ]}
-/>
 
 ---
 
@@ -162,6 +150,10 @@ export const theme = {
     { range: [78, 81], notes: "Using the artsy/remote-docker build job" },
   ]}
 />
+
+---
+
+## 4. Use parallel_tests gem
 
 ---
 
